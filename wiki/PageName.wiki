@@ -1,6 +1,4 @@
-#summary About SMQ
-
-Simple message queue is jsut that. a really simple, easy to use message queue that doesn't force you to manage the details of a queue.
+#summary SMQ Example
 
 The most simplistic method of use is to construct a new messagequeue similar to the folowing code.
 
@@ -50,4 +48,3 @@ public class MyClass
 }
 
 }}}
-
