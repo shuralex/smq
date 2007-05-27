@@ -9,13 +9,17 @@ namespace SimpleMessageQueue
     {
         public delegate void AckCallback(AckMessage msg);
         public AckCallback AckHandler;
-        public bool Success = false;
+        public AckMessage.StatusType Status = AckMessage.StatusType.WaitingToStart;
         public List<object> cmdArgs;
-        public bool WantAck = true;
+        public bool WantAck = false;
+        /// <summary>
+        /// for when we use a WaitOne call to signal completion.
+        /// </summary>
+        public object AckData;
 
         // is we requested a blocking call, then we monitor this to tell 
         // when the recieving entity has processed it.
-        public ManualResetEvent EventTripped = new ManualResetEvent(false);
+        public ManualResetEvent StatusChanged; // = new ManualResetEvent(false);
         public object Command;
 
         public CommandMessage()
@@ -23,76 +27,91 @@ namespace SimpleMessageQueue
         {
         }
 
-   //     public CommandMessage(object[] args)
-   //         : base(MessageType.Command, args)
-   //     {
-   //         WantAck = true;
-    //    }
         public CommandMessage(object cmd)
             : base(MessageType.Command)
         {
+            Command = cmd;
+        }
+
+        public CommandMessage(object cmd, AckCallback callback)
+            : base(MessageType.Command)
+        {
+            AckHandler = callback;
             WantAck = true;
             Command = cmd;
         }
 
-
-        public CommandMessage(object cmd, object[] args)
+        public CommandMessage(object cmd, bool useEvent)
+            : base(MessageType.Command)
+        {
+            StatusChanged = new ManualResetEvent(false);
+            WantAck = false;
+            Command = cmd;
+        }
+        public CommandMessage(object cmd, object args)
             : base(MessageType.Command, args)
         {
-            WantAck = true;
             Command = cmd;
         }
 
-        public CommandMessage(object cmd, object[] args, AckCallback callback)
+        public CommandMessage(object cmd, object args, AckCallback callback)
             : base(MessageType.Command, args)
         {
             AckHandler = callback;
+            WantAck = true;
             Command = cmd;
         }
 
-   //     public CommandMessage(object[] args, bool wantAck)
+        public CommandMessage(object cmd, object args, bool useEvent)
+            : base(MessageType.Command, args)
+        {
+            StatusChanged = new ManualResetEvent(false);
+            StatusChanged.Reset();
+            WantAck = false;
+            Command = cmd;
+        }
+        //     public CommandMessage(object[] args, bool wantAck)
    //         : base(MessageType.Command, args)
   //      {
   //      }
 
         public AckMessage AckCommand(AckMessage.StatusType status)
         {
+            if (StatusChanged != null)
+                StatusChanged.Set();
             if (!WantAck)
                 return null;
             AckMessage ack = new AckMessage(status, this);
+            
             return ack;
         }
 
-        public AckMessage AckCommand(AckMessage.StatusType status, object[] args)
+        public AckMessage AckCommand(AckMessage.StatusType status, object args)
         {
+            if (StatusChanged != null)
+                StatusChanged.Set();
             if (!WantAck)
                 return null;
             AckMessage ack = new AckMessage(status, args, this);
-            ack.Args = args;
             return ack;
         }
 
         public AckMessage AckCommand(AckMessage.StatusType status, string msg)
         {
+            if (StatusChanged != null)
+                StatusChanged.Set();
             if (!WantAck)
                 return null;
-            AckMessage ack = new AckMessage(status, new object[] { msg }, this);
+            AckMessage ack = new AckMessage(status, msg, this);
             return ack;
         }
 
-    //    public List<object> CmdArgs()
-    //    {
-    //        if (null != cmdArgs)
-    //            return cmdArgs;
-    //        cmdArgs = new List<object>();
-    //        for(int x = 1; x < base.Args.Length;x++)
-    //            cmdArgs.Add(base.Args[x]);
-    //        return cmdArgs;
-    //    }
-
-    //    public object CommandType()
-    //    {
-    //        return Args[0];
-   //     }
+        public void WaitForStatus()
+        {
+            if (null == StatusChanged)
+                return;
+            StatusChanged.WaitOne();
+            StatusChanged.Reset();
+        }
     }
 }

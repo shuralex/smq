@@ -14,11 +14,13 @@ namespace SimpleMessageQueue
     {
         public enum StatusType
         {
+            WaitingToStart,
             Started,
             Progress,
             Completed,
             Failed,
             Busy,
+            Shutdown,
             UnknownError
         }
 
@@ -30,6 +32,12 @@ namespace SimpleMessageQueue
         /// way if the command is for an async call.
         /// </summary>
         public StatusType Status = StatusType.UnknownError;
+
+        /// <summary>
+        /// for handling forwarded messages.
+        /// Get's filled with what was used to match this message.
+        /// </summary>
+        public object[] MatchParams;
 
         public AckMessage()
             : base(MessageType.Ack)
@@ -60,19 +68,17 @@ namespace SimpleMessageQueue
         }
 
         public AckMessage(StatusType s, string msg, CommandMessage m)
-            : base(MessageType.Ack)
+            : base(MessageType.Ack, msg)
         {
             Status = s;
-            Args = new object[] { msg };
             Command = m;
             recipient = m.sender;
         }
 
-        public AckMessage(StatusType s, object[] args, CommandMessage m)
-            : base(MessageType.Ack)
+        public AckMessage(StatusType s, object args, CommandMessage m)
+            : base(MessageType.Ack, args)
         {
             Status = s;
-            Args = args;
             Command = m;
             recipient = m.sender;
         }
