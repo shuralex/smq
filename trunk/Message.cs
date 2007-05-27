@@ -18,16 +18,17 @@ namespace SimpleMessageQueue
             Command,
             Ack,
             Registered,
-            UnRegistered,
+            UnRegister,
             Event,
             Bounce
         }
 
         public object Recipient { get { return recipient; } }
         public object Sender { get { return sender; } }
-        MessageType Type { get { return type; } }
-        public object[] Args;
+        public MessageType Type { get { return type; } }
+        public object Data { get { return data; } }
 
+        internal object data;
         internal object recipient;
         internal object sender;
         internal MessageType type;
@@ -35,6 +36,18 @@ namespace SimpleMessageQueue
         public Message()
         {
         }
+
+        public Message(MessageType _type)
+        {
+            type = _type;
+        }
+
+        public Message(MessageType _type, object args)
+        {
+            type = _type;
+            data = args;
+        }
+
 
         public bool IsSender(Object obj)
         {
@@ -46,26 +59,6 @@ namespace SimpleMessageQueue
             return recipient.Equals(obj);
         }
 
-        public Message(MessageType _type)
-        {
-            type = _type;
-        }
-
-        public Message(MessageType _type, object[] args)
-        {
-            type = _type;
-            Args = args;
-        }
-
         // returns a bounce message indicating that this queue doesn't understand the message.
-        public BounceMessage Bounce()
-        {
-            return new BounceMessage(this);
-        }
-
-        public BounceMessage Bounce(string msg)
-        {
-            return new BounceMessage(this, msg);
-        }
     }
 }
